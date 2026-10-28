@@ -215,7 +215,7 @@
   const SWEET_MIN = 60, SWEET_MAX = 120;
 
   let grab = null;           // { idx, side, start:{x,y} }
-  let pull = { x: 0, y: 0 }; // current displacement
+  let rawPull = { x: 0, y: 0 }; // current displacement
   let vel = { x: 0, y: 0 };
   let anchorIdx = 0, anchorSide = 1;
   let mood = 'idle';         // idle | stretch | ouch | happy
@@ -239,9 +239,30 @@
     return d > Math.PI ? Math.PI * 2 - d : d;
   }
 
+  const soft = (x, m) => m * (1 - Math.exp(-x / m));
+
+  // Keep the deformation believable: cheeks stretch outward freely, but can only
+  // dent inward a little and slide sideways a limited amount, so the outline never
+  // folds over itself (also covers the spring overshooting inward after release).
+  function shapePull(raw) {
+    const a = base[anchorIdx].a;
+    let nx = Math.cos(a) / RX, ny = Math.sin(a) / RY;
+    const nl = Math.hypot(nx, ny); nx /= nl; ny /= nl;
+    let out = raw.x * nx + raw.y * ny;
+    let tx = raw.x - out * nx, ty = raw.y - out * ny;
+    if (out < 0) out = -soft(-out, 10);
+    const tl = Math.hypot(tx, ty), tMax = 18 + 0.45 * Math.max(out, 0);
+    if (tl > 0) {
+      const t = soft(tl, tMax);
+      tx = tx / tl * t; ty = ty / tl * t;
+    }
+    return { x: out * nx + tx, y: out * ny + ty };
+  }
+
   function render() {
     const aA = base[anchorIdx].a;
-    const sigma = 0.42 + Math.min(Math.hypot(pull.x, pull.y), 200) / 900;
+    const pull = shapePull(rawPull);
+    const sigma = 0.38 + Math.min(Math.hypot(pull.x, pull.y), 160) / 1400;
     const pts = base.map(p => {
       const w = Math.exp(-(angDist(p.a, aA) ** 2) / (2 * sigma * sigma));
       return { x: p.x + pull.x * w, y: p.y + pull.y * w };
@@ -256,8 +277,10 @@
     earR.setAttribute('transform', `translate(${pull.x * 0.12 * R} ${pull.y * 0.12 * R})`);
 
     // mouth corners follow the stretched side
-    const ml = { x: 176 + pull.x * 0.32 * L, y: 296 + pull.y * 0.32 * L };
-    const mr = { x: 224 + pull.x * 0.32 * R, y: 296 + pull.y * 0.32 * R };
+    // mouth corners follow the stretched side, kept below the nose and off the jaw edge
+    const mdy = Math.max(-10, Math.min(14, pull.y * 0.2));
+    const ml = { x: 176 + Math.max(-40, Math.min(8, pull.x * 0.28)) * L, y: 296 + mdy * L };
+    const mr = { x: 224 + Math.max(-8, Math.min(40, pull.x * 0.28)) * R, y: 296 + mdy * R };
     const stretch = Math.hypot(pull.x, pull.y);
     const open = mood === 'ouch' ? 18 : mood === 'happy' ? 14 : Math.min(10, 3 + stretch / 20);
     const midX = (ml.x + mr.x) / 2, midY = (ml.y + mr.y) / 2;
@@ -402,7 +425,9 @@
     // only cheeks: lower part of face, not the middle (nose/mouth)
     let bestI = -1, bestD = 1e9;
     base.forEach((b, i) => {
-      if (b.y < CY - 10) return;
+      // cheek arcs only (angle 0 = right side, PI/2 = chin), never the chin itself
+      const onCheek = (b.a > 0.12 && b.a < 1.05) || (b.a > Math.PI - 1.05 && b.a < Math.PI - 0.12);
+      if (!onCheek) return;
       const d = Math.hypot(b.x - p.x, b.y - p.y);
       if (d < bestD) { bestD = d; bestI = i; }
     });
@@ -411,7 +436,7 @@
     anchorIdx = bestI;
     anchorSide = base[bestI].x < CX ? -1 : 1;
     grab = { start: { x: p.x, y: p.y } };
-    pull = { x: 0, y: 0 }; vel = { x: 0, y: 0 };
+    rawPull = { x: 0, y: 0 }; vel = { x: 0, y: 0 };
     mood = 'stretch';
     pinch.setAttribute('visibility', 'visible');
     hints.setAttribute('visibility', 'hidden');
@@ -430,9 +455,9 @@
       const eased = 220 * (1 - Math.exp(-len / 180));
       dx = dx / len * eased; dy = dy / len * eased;
     }
-    pull = { x: dx, y: dy };
-    if (stretchOsc) stretchOsc.frequency.value = 120 + Math.hypot(dx, dy) * 3;
-    const s = Math.hypot(dx, dy);
+    rawPull = { x: dx, y: dy };
+    const shaped = shapePull(rawPull), s = Math.hypot(shaped.x, shaped.y);
+    if (stretchOsc) stretchOsc.frequency.value = 120 + s * 3;
     if (s > SWEET_MAX) say('아아아…', 400);
     else if (s > SWEET_MIN) say('으으음~', 400);
   });
@@ -443,7 +468,7 @@
     stopStretch();
     pinch.setAttribute('visibility', 'hidden');
     svg.classList.remove('dragging');
-    const s = Math.hypot(pull.x, pull.y);
+    const shaped = shapePull(rawPull), s = Math.hypot(shaped.x, shaped.y);
     vel = { x: 0, y: 0 };
     if (!playing) return;
     if (s > SWEET_MAX) {
@@ -479,13 +504,13 @@
     const dt = Math.min(0.033, (now - last) / 1000); last = now;
     if (!grab) {
       const k = 260, c = 9;
-      vel.x += (-k * pull.x - c * vel.x) * dt;
-      vel.y += (-k * pull.y - c * vel.y) * dt;
-      pull.x += vel.x * dt; pull.y += vel.y * dt;
-      if (Math.abs(pull.x) < 0.05 && Math.abs(vel.x) < 0.05) { pull.x = 0; vel.x = 0; }
-      if (Math.abs(pull.y) < 0.05 && Math.abs(vel.y) < 0.05) { pull.y = 0; vel.y = 0; }
+      vel.x += (-k * rawPull.x - c * vel.x) * dt;
+      vel.y += (-k * rawPull.y - c * vel.y) * dt;
+      rawPull.x += vel.x * dt; rawPull.y += vel.y * dt;
+      if (Math.abs(rawPull.x) < 0.05 && Math.abs(vel.x) < 0.05) { rawPull.x = 0; vel.x = 0; }
+      if (Math.abs(rawPull.y) < 0.05 && Math.abs(vel.y) < 0.05) { rawPull.y = 0; vel.y = 0; }
       if (mood !== 'idle' && now > moodUntil) mood = 'idle';
-      if (playing && pull.x === 0 && pull.y === 0) hints.setAttribute('visibility', 'visible');
+      if (playing && rawPull.x === 0 && rawPull.y === 0) hints.setAttribute('visibility', 'visible');
     }
     render();
     requestAnimationFrame(tick);
