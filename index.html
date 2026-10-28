@@ -71,7 +71,7 @@
 <body>
 <header>
   <h1>볼살 쭈욱! 🍡</h1>
-  <div class="sub">볼을 잡고 쭈욱 당겼다 놓으세요. 초록 구간에서 놓으면 쫀득 보너스!</div>
+  <div class="sub">볼을 잡고 쭈욱 당겼다 놓으세요. 초록 구간에서 놓으면 쫀득 보너스!<br>두 손가락으로 양볼을 같이 당겼다 동시에 놓으면 점수 2배! (마우스는 Shift+드래그)</div>
 </header>
 
 <div class="hud">
@@ -153,7 +153,11 @@
     </g>
 
     <!-- pinch fingers -->
-    <g id="pinch" visibility="hidden">
+    <g id="pinchL" visibility="hidden">
+      <ellipse cx="0" cy="-12" rx="13" ry="10" fill="#f0c19c" stroke="#c99470" stroke-width="2"/>
+      <ellipse cx="0" cy="12" rx="13" ry="10" fill="#f0c19c" stroke="#c99470" stroke-width="2"/>
+    </g>
+    <g id="pinchR" visibility="hidden">
       <ellipse cx="0" cy="-12" rx="13" ry="10" fill="#f0c19c" stroke="#c99470" stroke-width="2"/>
       <ellipse cx="0" cy="12" rx="13" ry="10" fill="#f0c19c" stroke="#c99470" stroke-width="2"/>
     </g>
@@ -196,7 +200,7 @@
   const els = id => document.getElementById(id);
   const blushL = els('blushL'), blushR = els('blushR'), mole = els('mole');
   const earL = els('earL'), earR = els('earR');
-  const pinch = els('pinch'), hints = els('hints');
+  const hints = els('hints');
   const eyesOpen = els('eyesOpen'), eyesSquint = els('eyesSquint'), tears = els('tears');
   const bubble = els('bubble'), bubbleText = els('bubbleText'), bubbleBg = els('bubbleBg');
   const fill = els('fill'), stage = els('stage'), overlay = els('overlay');
@@ -214,10 +218,14 @@
   const MAX_PULL = 160;      // gauge full scale (viewBox units)
   const SWEET_MIN = 60, SWEET_MAX = 120;
 
-  let grab = null;           // { idx, side, start:{x,y} }
-  let rawPull = { x: 0, y: 0 }; // current displacement
-  let vel = { x: 0, y: 0 };
-  let anchorIdx = 0, anchorSide = 1;
+  // One state per cheek so both can be pulled at once (two fingers, or Shift+drag with a mouse).
+  const nearestIdx = (x, y) => base.reduce((bi, b, i) =>
+    Math.hypot(b.x - x, b.y - y) < Math.hypot(base[bi].x - x, base[bi].y - y) ? i : bi, 0);
+  const cheeks = {
+    L: { idx: nearestIdx(112, 282), raw: { x: 0, y: 0 }, vel: { x: 0, y: 0 }, grab: null, pinch: els('pinchL') },
+    R: { idx: nearestIdx(288, 282), raw: { x: 0, y: 0 }, vel: { x: 0, y: 0 }, grab: null, pinch: els('pinchR') },
+  };
+  const mirrorIdx = i => (N / 2 - i + N) % N;
   let mood = 'idle';         // idle | stretch | ouch | happy
   let moodUntil = 0;
 
@@ -244,8 +252,8 @@
   // Keep the deformation believable: cheeks stretch outward freely, but can only
   // dent inward a little and slide sideways a limited amount, so the outline never
   // folds over itself (also covers the spring overshooting inward after release).
-  function shapePull(raw) {
-    const a = base[anchorIdx].a;
+  function shapePull(raw, idx) {
+    const a = base[idx].a;
     let nx = Math.cos(a) / RX, ny = Math.sin(a) / RY;
     const nl = Math.hypot(nx, ny); nx /= nl; ny /= nl;
     let out = raw.x * nx + raw.y * ny;
@@ -258,30 +266,34 @@
     }
     return { x: out * nx + tx, y: out * ny + ty };
   }
+  const stretchOf = c => { const p = shapePull(c.raw, c.idx); return Math.hypot(p.x, p.y); };
 
   function render() {
-    const aA = base[anchorIdx].a;
-    const pull = shapePull(rawPull);
-    const sigma = 0.38 + Math.min(Math.hypot(pull.x, pull.y), 160) / 1400;
+    const pl = shapePull(cheeks.L.raw, cheeks.L.idx);
+    const pr = shapePull(cheeks.R.raw, cheeks.R.idx);
+    const parts = [[pl, cheeks.L.idx], [pr, cheeks.R.idx]].map(([pull, idx]) =>
+      ({ pull, a: base[idx].a, sigma: 0.38 + Math.min(Math.hypot(pull.x, pull.y), 160) / 1400 }));
     const pts = base.map(p => {
-      const w = Math.exp(-(angDist(p.a, aA) ** 2) / (2 * sigma * sigma));
-      return { x: p.x + pull.x * w, y: p.y + pull.y * w };
+      let x = p.x, y = p.y;
+      for (const c of parts) {
+        const w = Math.exp(-(angDist(p.a, c.a) ** 2) / (2 * c.sigma * c.sigma));
+        x += c.pull.x * w; y += c.pull.y * w;
+      }
+      return { x, y };
     });
     face.setAttribute('d', smoothClosed(pts));
 
-    const L = anchorSide < 0 ? 1 : 0, R = 1 - L;
-    blushL.setAttribute('transform', `translate(${pull.x * 0.55 * L} ${pull.y * 0.55 * L})`);
-    blushR.setAttribute('transform', `translate(${pull.x * 0.55 * R} ${pull.y * 0.55 * R})`);
-    mole.setAttribute('transform', `translate(${pull.x * 0.35 * R} ${pull.y * 0.35 * R})`);
-    earL.setAttribute('transform', `translate(${pull.x * 0.12 * L} ${pull.y * 0.12 * L})`);
-    earR.setAttribute('transform', `translate(${pull.x * 0.12 * R} ${pull.y * 0.12 * R})`);
+    blushL.setAttribute('transform', `translate(${pl.x * 0.55} ${pl.y * 0.55})`);
+    blushR.setAttribute('transform', `translate(${pr.x * 0.55} ${pr.y * 0.55})`);
+    mole.setAttribute('transform', `translate(${pr.x * 0.35} ${pr.y * 0.35})`);
+    earL.setAttribute('transform', `translate(${pl.x * 0.12} ${pl.y * 0.12})`);
+    earR.setAttribute('transform', `translate(${pr.x * 0.12} ${pr.y * 0.12})`);
 
-    // mouth corners follow the stretched side
-    // mouth corners follow the stretched side, kept below the nose and off the jaw edge
-    const mdy = Math.max(-10, Math.min(14, pull.y * 0.2));
-    const ml = { x: 176 + Math.max(-40, Math.min(8, pull.x * 0.28)) * L, y: 296 + mdy * L };
-    const mr = { x: 224 + Math.max(-8, Math.min(40, pull.x * 0.28)) * R, y: 296 + mdy * R };
-    const stretch = Math.hypot(pull.x, pull.y);
+    // mouth corners follow their cheek, kept below the nose and off the jaw edge
+    const mdy = v => Math.max(-10, Math.min(14, v * 0.2));
+    const ml = { x: 176 + Math.max(-40, Math.min(8, pl.x * 0.28)), y: 296 + mdy(pl.y) };
+    const mr = { x: 224 + Math.max(-8, Math.min(40, pr.x * 0.28)), y: 296 + mdy(pr.y) };
+    const stretch = Math.max(Math.hypot(pl.x, pl.y), Math.hypot(pr.x, pr.y));
     const open = mood === 'ouch' ? 18 : mood === 'happy' ? 14 : Math.min(10, 3 + stretch / 20);
     const midX = (ml.x + mr.x) / 2, midY = (ml.y + mr.y) / 2;
     const smile = mood === 'ouch' ? -4 : 6;
@@ -293,9 +305,12 @@
     eyesSquint.setAttribute('visibility', showSquint ? 'visible' : 'hidden');
     tears.setAttribute('visibility', mood === 'ouch' || stretch > SWEET_MAX ? 'visible' : 'hidden');
 
-    if (grab) {
-      const a = base[anchorIdx];
-      pinch.setAttribute('transform', `translate(${a.x + pull.x} ${a.y + pull.y})`);
+    for (const [c, pull] of [[cheeks.L, pl], [cheeks.R, pr]]) {
+      c.pinch.setAttribute('visibility', c.grab ? 'visible' : 'hidden');
+      if (c.grab) {
+        const a = base[c.idx];
+        c.pinch.setAttribute('transform', `translate(${a.x + pull.x} ${a.y + pull.y})`);
+      }
     }
     fill.style.width = Math.min(100, (stretch / MAX_PULL) * 100) + '%';
     fill.style.background = stretch > SWEET_MAX ? '#c9463b' : stretch >= SWEET_MIN ? '#2f8f57' : '#2b2420';
@@ -419,58 +434,73 @@
   }
 
   // ---------- input ----------
-  svg.addEventListener('pointerdown', e => {
-    if (!playing) return;
-    const p = toSvg(e);
-    // only cheeks: lower part of face, not the middle (nose/mouth)
+  const grabbing = () => !!(cheeks.L.grab || cheeks.R.grab);
+
+  function cheekIdxAt(p, side) {
+    // cheek arcs only (angle 0 = right side, PI/2 = chin), never the chin itself
     let bestI = -1, bestD = 1e9;
     base.forEach((b, i) => {
-      // cheek arcs only (angle 0 = right side, PI/2 = chin), never the chin itself
-      const onCheek = (b.a > 0.12 && b.a < 1.05) || (b.a > Math.PI - 1.05 && b.a < Math.PI - 0.12);
+      const onCheek = side === 'R' ? (b.a > 0.12 && b.a < 1.05) : (b.a > Math.PI - 1.05 && b.a < Math.PI - 0.12);
       if (!onCheek) return;
       const d = Math.hypot(b.x - p.x, b.y - p.y);
       if (d < bestD) { bestD = d; bestI = i; }
     });
+    return bestI;
+  }
+
+  function beginGrab(c, idx, id, start, mirror) {
+    c.idx = idx;
+    c.grab = { id, start, mirror };
+    c.raw = { x: 0, y: 0 }; c.vel = { x: 0, y: 0 };
+  }
+
+  svg.addEventListener('pointerdown', e => {
+    if (!playing) return;
+    const p = toSvg(e);
     const inFace = ((p.x - CX) / RX) ** 2 + ((p.y - CY) / RY) ** 2 < 1.25;
-    if (bestI < 0 || !inFace || Math.abs(p.x - CX) < 45) return;
-    anchorIdx = bestI;
-    anchorSide = base[bestI].x < CX ? -1 : 1;
-    grab = { start: { x: p.x, y: p.y } };
-    rawPull = { x: 0, y: 0 }; vel = { x: 0, y: 0 };
+    if (!inFace || Math.abs(p.x - CX) < 45) return;
+    const side = p.x < CX ? 'L' : 'R', other = side === 'L' ? 'R' : 'L';
+    const c = cheeks[side];
+    if (c.grab) return;
+    const idx = cheekIdxAt(p, side);
+    if (idx < 0) return;
+    const wasGrabbing = grabbing();
+    beginGrab(c, idx, e.pointerId, { x: p.x, y: p.y }, false);
+    // Shift + drag: the other cheek follows as a mirror image (two cheeks with one mouse)
+    if (e.shiftKey && !cheeks[other].grab) beginGrab(cheeks[other], mirrorIdx(idx), e.pointerId, { x: p.x, y: p.y }, true);
     mood = 'stretch';
-    pinch.setAttribute('visibility', 'visible');
     hints.setAttribute('visibility', 'hidden');
     svg.classList.add('dragging');
     svg.setPointerCapture(e.pointerId);
-    startStretch();
+    if (!wasGrabbing) startStretch();
   });
 
   svg.addEventListener('pointermove', e => {
-    if (!grab) return;
+    const mine = Object.values(cheeks).filter(c => c.grab && c.grab.id === e.pointerId);
+    if (!mine.length) return;
     const p = toSvg(e);
-    let dx = p.x - grab.start.x, dy = p.y - grab.start.y;
-    // rubber-band resistance
-    const len = Math.hypot(dx, dy);
-    if (len > 0) {
-      const eased = 220 * (1 - Math.exp(-len / 180));
-      dx = dx / len * eased; dy = dy / len * eased;
+    for (const c of mine) {
+      let dx = p.x - c.grab.start.x, dy = p.y - c.grab.start.y;
+      if (c.grab.mirror) dx = -dx;
+      // rubber-band resistance
+      const len = Math.hypot(dx, dy);
+      if (len > 0) {
+        const eased = 220 * (1 - Math.exp(-len / 180));
+        dx = dx / len * eased; dy = dy / len * eased;
+      }
+      c.raw = { x: dx, y: dy };
     }
-    rawPull = { x: dx, y: dy };
-    const shaped = shapePull(rawPull), s = Math.hypot(shaped.x, shaped.y);
+    const sL = stretchOf(cheeks.L), sR = stretchOf(cheeks.R), s = Math.max(sL, sR);
     if (stretchOsc) stretchOsc.frequency.value = 120 + s * 3;
     if (s > SWEET_MAX) say('아아아…', 400);
+    else if (sL > SWEET_MIN && sR > SWEET_MIN) say('으브브브~', 400);
     else if (s > SWEET_MIN) say('으으음~', 400);
   });
 
-  function release(e) {
-    if (!grab) return;
-    grab = null;
-    stopStretch();
-    pinch.setAttribute('visibility', 'hidden');
-    svg.classList.remove('dragging');
-    const shaped = shapePull(rawPull), s = Math.hypot(shaped.x, shaped.y);
-    vel = { x: 0, y: 0 };
-    if (!playing) return;
+  let lastSweet = { side: null, t: 0 };
+
+  function scoreRelease(side, e) {
+    const s = stretchOf(cheeks[side]);
     if (s > SWEET_MAX) {
       combo = 1;
       score = Math.max(0, score - 30);
@@ -479,19 +509,41 @@
       popText('-30 아야!', '#c9463b', e);
       ouchSound();
     } else if (s >= SWEET_MIN) {
-      const pts = Math.round(s) * combo;
+      let pts = Math.round(s) * combo;
+      const now = performance.now();
+      // both cheeks let go in the sweet zone at (almost) the same time: double points
+      const both = lastSweet.side && lastSweet.side !== side && now - lastSweet.t < 300;
+      if (both) pts *= 2;
+      lastSweet = both ? { side: null, t: 0 } : { side, t: now };
       score += pts;
       combo = Math.min(combo + 1, 9);
-      mood = 'happy'; moodUntil = performance.now() + 600;
-      say(['쫀득!', '말랑~', '찹쌀떡!', '보잉~'][Math.floor(Math.random() * 4)], 700);
-      popText('+' + pts + ' 쫀득!', '#2f8f57', e);
+      mood = 'happy'; moodUntil = now + 600;
+      if (both) say('양볼 쭈욱!!', 900);
+      else say(['쫀득!', '말랑~', '찹쌀떡!', '보잉~'][Math.floor(Math.random() * 4)], 700);
+      popText('+' + pts + (both ? ' 양볼 보너스!' : ' 쫀득!'), both ? '#d1861b' : '#2f8f57', e);
       boing(1 + combo * 0.05);
     } else if (s > 8) {
       score += Math.round(s / 4);
       combo = 1;
-      mood = 'idle';
+      if (mood !== 'happy' && mood !== 'ouch') mood = 'idle';
       popText('+' + Math.round(s / 4), '#8a7f76', e);
       boing(0.8);
+    }
+  }
+
+  function release(e) {
+    const sides = Object.keys(cheeks).filter(k => cheeks[k].grab && cheeks[k].grab.id === e.pointerId);
+    if (!sides.length) return;
+    // a mirrored pair is one gesture: count it as a two-cheek release
+    if (sides.length === 2) lastSweet = { side: null, t: 0 };
+    for (const k of sides) {
+      cheeks[k].grab = null;
+      cheeks[k].vel = { x: 0, y: 0 };
+      if (playing) scoreRelease(k, e);
+    }
+    if (!grabbing()) {
+      stopStretch();
+      svg.classList.remove('dragging');
     }
     updateHud();
   }
@@ -502,15 +554,19 @@
   let last = performance.now();
   function tick(now) {
     const dt = Math.min(0.033, (now - last) / 1000); last = now;
-    if (!grab) {
-      const k = 260, c = 9;
-      vel.x += (-k * rawPull.x - c * vel.x) * dt;
-      vel.y += (-k * rawPull.y - c * vel.y) * dt;
-      rawPull.x += vel.x * dt; rawPull.y += vel.y * dt;
-      if (Math.abs(rawPull.x) < 0.05 && Math.abs(vel.x) < 0.05) { rawPull.x = 0; vel.x = 0; }
-      if (Math.abs(rawPull.y) < 0.05 && Math.abs(vel.y) < 0.05) { rawPull.y = 0; vel.y = 0; }
+    for (const c of Object.values(cheeks)) {
+      if (c.grab) continue;
+      const k = 260, damp = 9;
+      c.vel.x += (-k * c.raw.x - damp * c.vel.x) * dt;
+      c.vel.y += (-k * c.raw.y - damp * c.vel.y) * dt;
+      c.raw.x += c.vel.x * dt; c.raw.y += c.vel.y * dt;
+      if (Math.abs(c.raw.x) < 0.05 && Math.abs(c.vel.x) < 0.05) { c.raw.x = 0; c.vel.x = 0; }
+      if (Math.abs(c.raw.y) < 0.05 && Math.abs(c.vel.y) < 0.05) { c.raw.y = 0; c.vel.y = 0; }
+    }
+    if (!grabbing()) {
       if (mood !== 'idle' && now > moodUntil) mood = 'idle';
-      if (playing && rawPull.x === 0 && rawPull.y === 0) hints.setAttribute('visibility', 'visible');
+      const still = Object.values(cheeks).every(c => c.raw.x === 0 && c.raw.y === 0);
+      if (playing && still) hints.setAttribute('visibility', 'visible');
     }
     render();
     requestAnimationFrame(tick);
