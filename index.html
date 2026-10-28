@@ -29,9 +29,10 @@
   .sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
   .hud {
     width: 100%; max-width: 480px; padding: 8px 16px;
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
   }
   .stat { background: var(--panel); border-radius: 12px; padding: 8px 6px; text-align: center; }
+  .stat.lv b { color: var(--accent); }
   .stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
   .stat span { font-size: 11px; color: var(--muted); }
   .stage { position: relative; width: 100%; max-width: 480px; flex: 1; min-height: 0; padding: 0 16px; }
@@ -39,7 +40,7 @@
   svg#game.dragging { cursor: grabbing; }
   .gauge { width: 100%; max-width: 480px; padding: 4px 16px 0; }
   .bar { position: relative; height: 14px; border-radius: 7px; background: #e2dbd2; overflow: hidden; }
-  .zone { position: absolute; top: 0; bottom: 0; }
+  .zone { position: absolute; top: 0; bottom: 0; transition: left .4s, width .4s; }
   .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--ink); opacity: .75; border-radius: 7px; }
   .legend { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 3px; }
   .controls { width: 100%; max-width: 480px; padding: 10px 16px 18px; display: flex; gap: 8px; }
@@ -77,6 +78,7 @@
 <div class="hud">
   <div class="stat"><b id="score">0</b><span>점수</span></div>
   <div class="stat"><b id="combo">x1</b><span>콤보</span></div>
+  <div class="stat lv"><b id="level">1</b><span>레벨</span></div>
   <div class="stat"><b id="time">30</b><span>남은 시간</span></div>
   <div class="stat"><b id="best">0</b><span>최고 기록</span></div>
 </div>
@@ -172,16 +174,16 @@
   <div class="overlay" id="overlay">
     <div>
       <div class="big" id="ovTitle">볼살 쭈욱!</div>
-      <p id="ovText">30초 동안 볼을 최대한 많이, 쫀득하게 당겨 보세요.<br>너무 세게 당기면 아파해요!</p>
+      <p id="ovText">30초 동안 볼을 최대한 많이, 쫀득하게 당겨 보세요.<br>너무 세게 당기면 아파해요!<br>쫀득 4번마다 레벨 업! 초록 구간이 점점 좁아져요.</p>
     </div>
   </div>
 </div>
 
 <div class="gauge">
   <div class="bar" id="bar">
-    <div class="zone" style="left:0;width:37.5%;background:#d8cfc4"></div>
-    <div class="zone" style="left:37.5%;width:37.5%;background:#9fd8b4"></div>
-    <div class="zone" style="left:75%;width:25%;background:#f2a49c"></div>
+    <div class="zone" id="zoneLow" style="left:0;width:37.5%;background:#d8cfc4"></div>
+    <div class="zone" id="zoneSweet" style="left:37.5%;width:37.5%;background:#9fd8b4"></div>
+    <div class="zone" id="zoneOuch" style="left:75%;width:25%;background:#f2a49c"></div>
     <div class="fill" id="fill"></div>
   </div>
   <div class="legend"><span>살짝</span><span>쫀득 구간</span><span>아야!</span></div>
@@ -216,7 +218,31 @@
   }
 
   const MAX_PULL = 160;      // gauge full scale (viewBox units)
-  const SWEET_MIN = 60, SWEET_MAX = 120;
+  let SWEET_MIN = 60, SWEET_MAX = 120;
+
+  // Difficulty: every few 쫀득 releases the sweet zone gets narrower and moves around.
+  // Anything past the zone counts as 아야!
+  const LEVELS = [
+    { width: 60, lo: 60, hi: 60 },   // 1: fixed 60–120
+    { width: 46, lo: 55, hi: 85 },
+    { width: 36, lo: 45, hi: 105 },
+    { width: 27, lo: 40, hi: 115 },
+    { width: 20, lo: 35, hi: 125 },  // 5+: tiny zone anywhere
+  ];
+  const LEVEL_UP_EVERY = 4;
+  let level = 1, sweetCount = 0;
+
+  function setZone() {
+    const L = LEVELS[Math.min(level, LEVELS.length) - 1];
+    SWEET_MIN = Math.round(L.lo + Math.random() * (L.hi - L.lo));
+    SWEET_MAX = SWEET_MIN + L.width;
+    const pct = v => (v / MAX_PULL) * 100;
+    els('zoneLow').style.width = pct(SWEET_MIN) + '%';
+    els('zoneSweet').style.left = pct(SWEET_MIN) + '%';
+    els('zoneSweet').style.width = pct(L.width) + '%';
+    els('zoneOuch').style.left = pct(SWEET_MAX) + '%';
+    els('zoneOuch').style.width = (100 - pct(SWEET_MAX)) + '%';
+  }
 
   // One state per cheek so both can be pulled at once (two fingers, or Shift+drag with a mouse).
   const nearestIdx = (x, y) => base.reduce((bi, b, i) =>
@@ -400,10 +426,12 @@
     els('score').textContent = score;
     els('combo').textContent = 'x' + combo;
     els('time').textContent = timeLeft;
+    els('level').textContent = level;
   }
 
   function startGame() {
     score = 0; combo = 1; timeLeft = 30; playing = true;
+    level = 1; sweetCount = 0; setZone();
     overlay.hidden = true;
     els('start').disabled = true;
     updateHud();
@@ -428,6 +456,7 @@
       els('best').textContent = best;
       msg = '신기록! 🎉';
     }
+    msg += ' (레벨 ' + level + ')';
     els('ovTitle').textContent = score + '점';
     els('ovText').innerHTML = msg + '<br>최고 기록: ' + best + '점';
     overlay.hidden = false;
@@ -517,6 +546,9 @@
       lastSweet = both ? { side: null, t: 0 } : { side, t: now };
       score += pts;
       combo = Math.min(combo + 1, 9);
+      // zone changes wait a moment so the other cheek of a two-cheek release is judged fairly
+      if (++sweetCount % LEVEL_UP_EVERY === 0) levelUp(e);
+      else if (level >= 3) laterZone();   // from level 3 the zone jumps after every hit
       mood = 'happy'; moodUntil = now + 600;
       if (both) say('양볼 쭈욱!!', 900);
       else say(['쫀득!', '말랑~', '찹쌀떡!', '보잉~'][Math.floor(Math.random() * 4)], 700);
@@ -529,6 +561,22 @@
       popText('+' + Math.round(s / 4), '#8a7f76', e);
       boing(0.8);
     }
+  }
+
+  let zoneTimer = null;
+  function laterZone() {
+    clearTimeout(zoneTimer);
+    zoneTimer = setTimeout(() => { if (playing) setZone(); }, 350);
+  }
+
+  function levelUp(e) {
+    level++;
+    timeLeft += 3;
+    laterZone();
+    setTimeout(() => {
+      say('레벨 ' + level + '! 더 어려워져…', 1100);
+      popText('LEVEL UP! +3초', '#e8655a', { clientX: e.clientX, clientY: e.clientY - 40 });
+    }, 250);
   }
 
   function release(e) {
