@@ -85,68 +85,116 @@
 
 <div class="stage" id="stage">
   <svg id="game" viewBox="0 0 400 480" aria-label="볼살 당기기 게임">
-    <!-- jacket -->
-    <path d="M40 480 C50 400 110 360 200 360 C290 360 350 400 360 480 Z" fill="#5b3a2a"/>
-    <path d="M150 365 L200 480 L250 365 Z" fill="#fbfaf7"/>
-    <path d="M140 368 C160 400 180 440 196 480" stroke="#a9b6c6" stroke-width="10" fill="none"/>
-    <path d="M260 368 C240 400 220 440 204 480" stroke="#a9b6c6" stroke-width="10" fill="none"/>
-    <path d="M140 368 C160 400 180 440 196 480" stroke="#4a2f22" stroke-width="3" fill="none"/>
-    <path d="M260 368 C240 400 220 440 204 480" stroke="#4a2f22" stroke-width="3" fill="none"/>
-    <circle cx="262" cy="440" r="7" fill="#b9975a"/>
+    <!-- jacket: brown body, taupe raglan sleeves, striped rib collar (like the photos) -->
+    <path d="M14 480 C24 408 90 366 200 362 C310 366 376 408 386 480 Z" fill="#8f8677"/>
+    <path d="M84 480 C92 420 132 380 200 374 C268 380 308 420 316 480 Z" fill="#5b3a2a"/>
+    <path d="M156 370 L200 480 L244 370 Z" fill="#fbfaf7"/>
+    <g fill="#9a9a9a"><rect x="188" y="452" width="6" height="6"/><rect x="194" y="446" width="6" height="6"/><rect x="200" y="452" width="6" height="6"/><rect x="206" y="458" width="6" height="6"/><rect x="194" y="464" width="6" height="6" fill="#555"/></g>
+    <g fill="none" stroke-linecap="round">
+      <path d="M150 368 C166 400 184 444 198 480" stroke="#4a2f22" stroke-width="20"/>
+      <path d="M250 368 C234 400 216 444 202 480" stroke="#4a2f22" stroke-width="20"/>
+      <path d="M150 368 C166 400 184 444 198 480" stroke="#a9b6c6" stroke-width="11"/>
+      <path d="M250 368 C234 400 216 444 202 480" stroke="#a9b6c6" stroke-width="11"/>
+      <path d="M150 368 C166 400 184 444 198 480" stroke="#4a2f22" stroke-width="5"/>
+      <path d="M250 368 C234 400 216 444 202 480" stroke="#4a2f22" stroke-width="5"/>
+    </g>
+    <circle cx="258" cy="428" r="6.5" fill="#a88a55" stroke="#7d6438" stroke-width="1.5"/>
+    <circle cx="252" cy="470" r="6.5" fill="#a88a55" stroke="#7d6438" stroke-width="1.5"/>
+    <g fill="none" stroke="#d9b44a" stroke-width="2" stroke-linecap="round">
+      <path d="M290 432 C286 444 292 456 300 452 C306 448 302 438 296 440"/>
+      <path d="M284 462 C290 456 300 458 306 464" stroke="#e8e2d6"/>
+    </g>
+    <g fill="none" stroke-linecap="round">
+      <path d="M146 372 C150 350 172 340 200 340 C228 340 250 350 254 372" stroke="#4a2f22" stroke-width="20"/>
+      <path d="M146 372 C150 350 172 340 200 340 C228 340 250 350 254 372" stroke="#a9b6c6" stroke-width="11"/>
+      <path d="M146 372 C150 350 172 340 200 340 C228 340 250 350 254 372" stroke="#4a2f22" stroke-width="5"/>
+    </g>
     <!-- neck -->
     <rect x="170" y="330" width="60" height="40" rx="12" fill="#f2c9a5"/>
 
     <!-- ears -->
     <g id="ears">
-      <ellipse id="earL" cx="82" cy="232" rx="20" ry="28" fill="#f2c9a5"/>
-      <ellipse id="earR" cx="318" cy="232" rx="20" ry="28" fill="#f2c9a5"/>
+      <g id="earL"><ellipse cx="80" cy="248" rx="19" ry="27" fill="#f2c9a5"/><path d="M84 236 C74 240 74 256 84 262" stroke="#dba886" stroke-width="3" fill="none" stroke-linecap="round"/></g>
+      <g id="earR"><ellipse cx="320" cy="248" rx="19" ry="27" fill="#f2c9a5"/><path d="M316 236 C326 240 326 256 316 262" stroke="#dba886" stroke-width="3" fill="none" stroke-linecap="round"/></g>
     </g>
 
     <!-- face (deformable) -->
     <path id="face" fill="#f7d4b5" stroke="#e3b48e" stroke-width="2"/>
 
-    <!-- blush -->
-    <ellipse id="blushL" cx="130" cy="272" rx="26" ry="14" fill="#f29b8d" opacity=".45"/>
-    <ellipse id="blushR" cx="270" cy="272" rx="26" ry="14" fill="#f29b8d" opacity=".45"/>
-    <!-- mole near right ear -->
-    <circle id="mole" cx="292" cy="246" r="3.2" fill="#3a2a22"/>
+    <!-- blush: grows and reddens as the cheek heats up -->
+    <ellipse id="blushL" cx="128" cy="282" rx="26" ry="14" fill="#f29b8d" opacity=".4"/>
+    <ellipse id="blushR" cx="272" cy="282" rx="26" ry="14" fill="#f29b8d" opacity=".4"/>
+    <g id="heatL" opacity="0" fill="none" stroke="#e8434a" stroke-width="2.5" stroke-linecap="round">
+      <path d="M112 262 l6 -8"/><path d="M124 258 l6 -8"/><path d="M136 262 l6 -8"/>
+    </g>
+    <g id="heatR" opacity="0" fill="none" stroke="#e8434a" stroke-width="2.5" stroke-linecap="round">
+      <path d="M258 262 l6 -8"/><path d="M270 258 l6 -8"/><path d="M282 262 l6 -8"/>
+    </g>
+    <!-- mole in front of the right ear -->
+    <circle id="mole" cx="296" cy="252" r="3.4" fill="#3a2a22"/>
 
-    <!-- hair: bowl cut -->
-    <path d="M78 214 C66 120 120 62 200 60 C282 62 336 120 322 214
-             C312 196 300 186 290 182 L110 182 C100 186 88 196 78 214 Z" fill="#1f1a18"/>
-    <path d="M108 184 C120 172 140 168 160 172 C176 166 196 168 214 174 C232 166 256 168 270 176 C282 174 292 178 292 184 Z" fill="#1f1a18"/>
-    <path d="M150 90 C170 82 210 80 236 88" stroke="#3b3330" stroke-width="4" fill="none" stroke-linecap="round"/>
-
-    <!-- eyes -->
+    <!-- eyes: small and narrow -->
     <g id="eyesOpen">
-      <ellipse cx="160" cy="222" rx="7" ry="8" fill="#2b2420"/>
-      <ellipse cx="240" cy="222" rx="7" ry="8" fill="#2b2420"/>
-      <circle cx="162.5" cy="219" r="2.2" fill="#fff"/>
-      <circle cx="242.5" cy="219" r="2.2" fill="#fff"/>
+      <ellipse cx="158" cy="230" rx="8" ry="4.6" fill="#2b2420"/>
+      <ellipse cx="242" cy="230" rx="8" ry="4.6" fill="#2b2420"/>
+      <circle cx="160.5" cy="228.5" r="1.6" fill="#fff"/>
+      <circle cx="244.5" cy="228.5" r="1.6" fill="#fff"/>
+      <path d="M147 226 Q158 220 169 226 M231 226 Q242 220 253 226" stroke="#2b2420" stroke-width="2" fill="none" stroke-linecap="round"/>
     </g>
     <g id="eyesSquint" visibility="hidden" stroke="#2b2420" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M150 214 L166 222 L150 230"/>
-      <path d="M250 214 L234 222 L250 230"/>
+      <path d="M150 222 L166 230 L150 238"/>
+      <path d="M250 222 L234 230 L250 238"/>
     </g>
     <g id="tears" visibility="hidden" fill="#7cc4f0">
-      <path d="M148 236 C144 248 144 256 150 258 C156 256 156 248 152 236 Z"/>
-      <path d="M252 236 C248 248 248 256 254 258 C260 256 260 248 256 236 Z"/>
+      <path d="M146 244 C142 256 142 264 148 266 C154 264 154 256 150 244 Z"/>
+      <path d="M250 244 C246 256 246 264 252 266 C258 264 258 256 254 244 Z"/>
     </g>
 
-    <!-- round gold glasses -->
-    <g fill="rgba(220,215,255,.18)" stroke="#c9a24a" stroke-width="3.5">
-      <circle cx="160" cy="222" r="30"/>
-      <circle cx="240" cy="222" r="30"/>
+    <!-- glasses: big round lenses, gold outer rim, dark inner rim, double bridge -->
+    <g fill="rgba(196,186,255,.16)" stroke="#c9a24a" stroke-width="4" stroke-linejoin="round">
+      <circle cx="158" cy="228" r="33"/>
+      <circle cx="242" cy="228" r="33"/>
     </g>
-    <path d="M190 218 C195 212 205 212 210 218" stroke="#c9a24a" stroke-width="3" fill="none"/>
-    <path d="M130 216 L92 210" stroke="#c9a24a" stroke-width="3"/>
-    <path d="M270 216 L308 210" stroke="#c9a24a" stroke-width="3"/>
+    <g fill="none" stroke="#5a463c" stroke-width="1.6" stroke-linejoin="round">
+      <circle cx="158" cy="228" r="30.5"/>
+      <circle cx="242" cy="228" r="30.5"/>
+    </g>
+    <path d="M140 212 L150 206 M224 212 L234 206" stroke="#fff" stroke-width="3" opacity=".55" stroke-linecap="round"/>
+    <path d="M190 214 L210 214" stroke="#c9a24a" stroke-width="3"/>
+    <path d="M191 230 Q200 222 209 230" stroke="#c9a24a" stroke-width="2.5" fill="none"/>
+    <path d="M126 222 L86 216" stroke="#c9a24a" stroke-width="3"/>
+    <path d="M274 222 L314 216" stroke="#c9a24a" stroke-width="3"/>
+
+    <!-- hair: thick mushroom bowl cut, fringe down to the glasses, sideburns over the ears -->
+    <path d="M86 268 C70 236 58 196 64 158 C72 90 128 44 200 42 C272 44 328 90 336 158
+             C342 196 330 236 314 268 C308 250 304 230 300 212 Q293 212 286 203 Q279 215 272 206 Q265 209 258 200 Q251 218 244 209 Q237 209 230 200 Q223 215 216 206 Q209 212 202 203 Q195 215 188 206 Q181 209 174 200 Q167 218 160 209 Q153 209 146 200 Q139 215 132 206 Q125 212 118 203 Q111 215 104 206 C98 226 94 246 86 268 Z" fill="#1d1816"/>
+    <g fill="none" stroke="#3d3431" stroke-width="2.2" stroke-linecap="round" opacity=".75">
+      <path d="M196 56 C176 92 168 140 158 194"/>
+      <path d="M204 56 C214 100 222 150 236 192"/>
+      <path d="M182 62 C146 96 124 140 116 190"/>
+      <path d="M220 62 C260 96 282 140 288 188"/>
+      <path d="M166 74 C128 104 96 140 88 186"/>
+      <path d="M236 74 C274 104 304 140 312 186"/>
+    </g>
+    <path d="M168 154 C176 168 180 182 180 196 M226 150 C220 168 218 182 220 196" stroke="#2c2522" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M140 80 C166 64 222 62 252 76" stroke="#4a403c" stroke-width="5" fill="none" stroke-linecap="round" opacity=".7"/>
 
     <!-- nose -->
-    <path d="M196 248 C198 256 204 256 206 250" stroke="#d9a07c" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M193 258 Q200 266 207 258" stroke="#d9a07c" stroke-width="3" fill="none" stroke-linecap="round"/>
 
-    <!-- mouth (deformable) -->
-    <path id="mouth" fill="#c8606a" stroke="#9e4450" stroke-width="2.5" stroke-linejoin="round"/>
+    <!-- mouth (deformable) with braces showing when it opens -->
+    <clipPath id="mouthClip"><use href="#mouth"/></clipPath>
+    <path id="mouth" fill="#b84f5c" stroke="#a24a56" stroke-width="2.5" stroke-linejoin="round"/>
+    <g clip-path="url(#mouthClip)">
+      <g id="braces" visibility="hidden">
+        <rect x="-26" y="-6" width="52" height="9" fill="#fffaf2"/>
+        <path d="M-26 -1.5 L26 -1.5" stroke="#9aa3b0" stroke-width="1.2"/>
+        <g fill="#cfd5de" stroke="#9aa3b0" stroke-width=".6">
+          <rect x="-17" y="-3.5" width="4" height="4"/><rect x="-10" y="-3.5" width="4" height="4"/><rect x="-3" y="-3.5" width="4" height="4"/>
+          <rect x="4" y="-3.5" width="4" height="4"/><rect x="11" y="-3.5" width="4" height="4"/>
+        </g>
+      </g>
+    </g>
 
     <!-- grab hints -->
     <g id="hints" fill="none" stroke="#e8655a" stroke-width="3" stroke-dasharray="6 6" opacity=".8">
@@ -200,7 +248,7 @@
   const face = document.getElementById('face');
   const mouth = document.getElementById('mouth');
   const els = id => document.getElementById(id);
-  const blushL = els('blushL'), blushR = els('blushR'), mole = els('mole');
+  const mole = els('mole');
   const earL = els('earL'), earR = els('earR');
   const hints = els('hints');
   const eyesOpen = els('eyesOpen'), eyesSquint = els('eyesSquint'), tears = els('tears');
@@ -208,13 +256,13 @@
   const fill = els('fill'), stage = els('stage'), overlay = els('overlay');
 
   // Face outline: ellipse sampled into points, deformed around the grabbed anchor.
-  const CX = 200, CY = 232, RX = 118, RY = 128, N = 72;
+  const CX = 200, CY = 238, RX = 124, RY = 124, N = 72;
   const base = [];
   for (let i = 0; i < N; i++) {
     const a = (i / N) * Math.PI * 2;
     // fuller jaw/cheeks: widen lower half slightly
     const lower = Math.max(0, Math.sin(a));
-    base.push({ a, x: CX + Math.cos(a) * RX * (1 + 0.06 * lower), y: CY + Math.sin(a) * RY });
+    base.push({ a, x: CX + Math.cos(a) * RX * (1 + 0.1 * lower), y: CY + Math.sin(a) * RY });
   }
 
   const MAX_PULL = 160;      // gauge full scale (viewBox units)
@@ -248,8 +296,8 @@
   const nearestIdx = (x, y) => base.reduce((bi, b, i) =>
     Math.hypot(b.x - x, b.y - y) < Math.hypot(base[bi].x - x, base[bi].y - y) ? i : bi, 0);
   const cheeks = {
-    L: { idx: nearestIdx(112, 282), raw: { x: 0, y: 0 }, vel: { x: 0, y: 0 }, grab: null, pinch: els('pinchL') },
-    R: { idx: nearestIdx(288, 282), raw: { x: 0, y: 0 }, vel: { x: 0, y: 0 }, grab: null, pinch: els('pinchR') },
+    L: { idx: nearestIdx(112, 282), raw: { x: 0, y: 0 }, vel: { x: 0, y: 0 }, grab: null, pinch: els('pinchL'), heat: 0, blush: els('blushL'), fx: els('heatL') },
+    R: { idx: nearestIdx(288, 282), raw: { x: 0, y: 0 }, vel: { x: 0, y: 0 }, grab: null, pinch: els('pinchR'), heat: 0, blush: els('blushR'), fx: els('heatR') },
   };
   const mirrorIdx = i => (N / 2 - i + N) % N;
   let mood = 'idle';         // idle | stretch | ouch | happy
@@ -309,20 +357,33 @@
     });
     face.setAttribute('d', smoothClosed(pts));
 
-    blushL.setAttribute('transform', `translate(${pl.x * 0.55} ${pl.y * 0.55})`);
-    blushR.setAttribute('transform', `translate(${pr.x * 0.55} ${pr.y * 0.55})`);
+    // blush grows and turns deep red with each cheek's heat
+    for (const [c, pull] of [[cheeks.L, pl], [cheeks.R, pr]]) {
+      const h = c.heat, t = `translate(${pull.x * 0.55} ${pull.y * 0.55})`;
+      c.blush.setAttribute('transform', t);
+      c.blush.setAttribute('rx', 26 + 14 * h);
+      c.blush.setAttribute('ry', 14 + 8 * h);
+      c.blush.setAttribute('opacity', 0.4 + 0.5 * h);
+      c.blush.setAttribute('fill', `rgb(${242 - 10 * h | 0},${155 - 95 * h | 0},${141 - 80 * h | 0})`);
+      c.fx.setAttribute('transform', t);
+      c.fx.setAttribute('opacity', Math.max(0, (h - 0.6) / 0.4));
+    }
     mole.setAttribute('transform', `translate(${pr.x * 0.35} ${pr.y * 0.35})`);
     earL.setAttribute('transform', `translate(${pl.x * 0.12} ${pl.y * 0.12})`);
     earR.setAttribute('transform', `translate(${pr.x * 0.12} ${pr.y * 0.12})`);
 
     // mouth corners follow their cheek, kept below the nose and off the jaw edge
     const mdy = v => Math.max(-10, Math.min(14, v * 0.2));
-    const ml = { x: 176 + Math.max(-40, Math.min(8, pl.x * 0.28)), y: 296 + mdy(pl.y) };
-    const mr = { x: 224 + Math.max(-8, Math.min(40, pr.x * 0.28)), y: 296 + mdy(pr.y) };
+    const ml = { x: 183 + Math.max(-40, Math.min(8, pl.x * 0.28)), y: 304 + mdy(pl.y) };
+    const mr = { x: 217 + Math.max(-8, Math.min(40, pr.x * 0.28)), y: 304 + mdy(pr.y) };
     const stretch = Math.max(Math.hypot(pl.x, pl.y), Math.hypot(pr.x, pr.y));
     const open = mood === 'ouch' ? 18 : mood === 'happy' ? 14 : Math.min(10, 3 + stretch / 20);
     const midX = (ml.x + mr.x) / 2, midY = (ml.y + mr.y) / 2;
     const smile = mood === 'ouch' ? -4 : 6;
+    // braces peek out when the mouth opens
+    const braces = els('braces');
+    braces.setAttribute('visibility', open >= 8 ? 'visible' : 'hidden');
+    braces.setAttribute('transform', `translate(${midX} ${midY - smile + 6}) scale(${(mr.x - ml.x) / 34} 1)`);
     mouth.setAttribute('d',
       `M${ml.x} ${ml.y} Q${midX} ${midY - smile + 2} ${mr.x} ${mr.y} Q${midX} ${midY + open + smile} ${ml.x} ${ml.y} Z`);
 
@@ -432,6 +493,7 @@
   function startGame() {
     score = 0; combo = 1; timeLeft = 30; playing = true;
     level = 1; sweetCount = 0; setZone();
+    cheeks.L.heat = cheeks.R.heat = 0;
     overlay.hidden = true;
     els('start').disabled = true;
     updateHud();
@@ -530,6 +592,7 @@
 
   function scoreRelease(side, e) {
     const s = stretchOf(cheeks[side]);
+    cheeks[side].heat = Math.min(1, cheeks[side].heat + (s / MAX_PULL) * 0.08);
     if (s > SWEET_MAX) {
       combo = 1;
       score = Math.max(0, score - 30);
@@ -603,6 +666,11 @@
   function tick(now) {
     const dt = Math.min(0.033, (now - last) / 1000); last = now;
     for (const c of Object.values(cheeks)) {
+      // cheeks heat up while stretched and cool down slowly
+      const before = c.heat;
+      c.heat = c.grab ? Math.min(1, c.heat + (stretchOf(c) / MAX_PULL) * dt * 0.35)
+                      : Math.max(0, c.heat - dt * 0.04);
+      if (playing && before < 0.75 && c.heat >= 0.75) say('볼이 화끈거려…🔥', 1000);
       if (c.grab) continue;
       const k = 260, damp = 9;
       c.vel.x += (-k * c.raw.x - damp * c.vel.x) * dt;
